@@ -64,8 +64,7 @@ BufMgr::~BufMgr() {
 
 const Status BufMgr::allocBuf(int & frame) 
 {
-    int pinnedFrames[numBufs];
-    memset(pinnedFrames, 0, sizeof(pinnedFrames));
+    int pinnedFrames[numBufs] = {0};
     int numbPinned = 0;
     unsigned int startHand = clockHand;
     while(numbPinned != numBufs) {
@@ -89,17 +88,17 @@ const Status BufMgr::allocBuf(int & frame)
                 else { // page is not pinned
                     if(bufFrame->dirty) { // dirty is set
                         if(bufFrame->file->writePage(bufFrame->pageNo, &bufPool[bufFrame->frameNo]) != OK) return UNIXERR;
-
+                        
                         // frame found
                         hashTable->remove(bufFrame->file, bufFrame->pageNo); // remove page from hash table
-                        bufFrame->Set(bufFrame->file, bufFrame->pageNo); // invoke Set() on frame
+                        bufFrame->Clear();
                         frame = bufFrame->frameNo;
                         return OK; // success
                     }
                     else { // dirty is not set
                         // frame found
                         hashTable->remove(bufFrame->file, bufFrame->pageNo); // remove page from hash table
-                        bufFrame->Set(bufFrame->file, bufFrame->pageNo); // invoke Set() on frame
+                        bufFrame->Clear();
                         frame = bufFrame->frameNo;
                         return OK; // success
                     }
@@ -109,14 +108,12 @@ const Status BufMgr::allocBuf(int & frame)
         else { // valid is not set
             // frame found
             hashTable->remove(bufFrame->file, bufFrame->pageNo); // remove page from hash table
-            bufFrame->Set(bufFrame->file, bufFrame->pageNo); // invoke Set() on frame
+            bufFrame->Clear();
             frame = bufFrame->frameNo;
             return OK; // success
         }
     }
     return BUFFEREXCEEDED; // all buffer frames are pinned
-
-
 }
 
 const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
@@ -162,8 +159,7 @@ const Status BufMgr::unPinPage(File* file, const int PageNo,
     
     if (status == OK) // If page is found in hashtable
     {
-        BufDesc *frame;
-        frame = &bufTable[frameNo]; // Gets frame containing this page
+        BufDesc *frame = &bufTable[frameNo]; // Gets frame containing this page
 
         if (dirty) { // If 'dirty' param is true
             frame->dirty = true; // Set frame's dirty bit as true
