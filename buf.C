@@ -76,7 +76,6 @@ const Status BufMgr::allocBuf(int & frame)
 
         BufDesc *bufFrame = &bufTable[clockHand];
         if(bufFrame->valid) { // valid is set
-            hashTable->remove(bufFrame->file, bufFrame->pageNo); // remove page from hash table
             if(bufFrame->refbit) { // refBit is set
                 bufFrame->refbit = false; // clear refBit
                 continue; // restart
@@ -89,14 +88,17 @@ const Status BufMgr::allocBuf(int & frame)
                 }
                 else { // page is not pinned
                     if(bufFrame->dirty) { // dirty is set
-                        if(flushFile(bufFrame->file) != OK) return UNIXERR; // return UNIXERR if flushing to disk failed
+                        if(bufFrame->file->writePage(bufFrame->pageNo, &bufPool[bufFrame->frameNo]) != OK) return UNIXERR;
+
                         // frame found
+                        hashTable->remove(bufFrame->file, bufFrame->pageNo); // remove page from hash table
                         bufFrame->Set(bufFrame->file, bufFrame->pageNo); // invoke Set() on frame
                         frame = bufFrame->frameNo;
                         return OK; // success
                     }
                     else { // dirty is not set
                         // frame found
+                        hashTable->remove(bufFrame->file, bufFrame->pageNo); // remove page from hash table
                         bufFrame->Set(bufFrame->file, bufFrame->pageNo); // invoke Set() on frame
                         frame = bufFrame->frameNo;
                         return OK; // success
@@ -106,6 +108,7 @@ const Status BufMgr::allocBuf(int & frame)
         }
         else { // valid is not set
             // frame found
+            hashTable->remove(bufFrame->file, bufFrame->pageNo); // remove page from hash table
             bufFrame->Set(bufFrame->file, bufFrame->pageNo); // invoke Set() on frame
             frame = bufFrame->frameNo;
             return OK; // success
