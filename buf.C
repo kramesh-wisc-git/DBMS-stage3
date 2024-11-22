@@ -1,3 +1,11 @@
+/**
+ * Krishna Ramesh - 908 469 4752 - kramesh5@wisc.edu
+ * Scott Huddleston - 908 229 1163 - schuddleston@wisc.edu
+ * Manoj Arulmurugan - arulmurugan@wisc.edu
+ * 
+ * This file is the implementation of the BufMgr class that which contains the 4 methods that we implemented in order to allocate frames and buffers as required by our database.
+ */
+
 #include <memory.h>
 #include <unistd.h>
 #include <errno.h>
@@ -62,6 +70,12 @@ BufMgr::~BufMgr() {
     delete [] bufPool;
 }
 
+/**
+ * method used by allocPage and readPage to allocate a frame in the buffer. A free frame is found
+ * using the clock algorithm and it clears the free frame, or returns with an error.
+ * @param frame - referance to a frame integer that is used to return the frame number of the free frame back to the caller
+ * @return Status OK if free frame found, BUFFEREXCEEDED if all pages are pinned, UNIXERR if writing a dirty page back to disk failed
+ */
 const Status BufMgr::allocBuf(int & frame) 
 {
     int pinnedFrames[numBufs] = {0};
@@ -106,6 +120,13 @@ const Status BufMgr::allocBuf(int & frame)
     return BUFFEREXCEEDED; // all buffer frames are pinned
 }
 
+/**
+ * method used to read a page from bufferPool if it exists
+ * @param file - a file pointer in which the page exists
+ * @param PageNo - the page number corresponding to the page the caller wants to read
+ * @param page - reference to a Page pointer that is used to return the pointer to the page the caller wants to read
+ * @return Status OK if reading was successful, or intermediate status error from calling allocBuf(), readPage(), or insert()
+ */
 const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
 {
     Status status = OK;
@@ -140,6 +161,13 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
     return OK; // Success
 }
 
+/**
+ * method used to unpin a certain page by decrementing the pinCnt integer var in the frame
+ * @param file - a file pointer in which the page exists
+ * @param PageNo - the page number corresponding to the page the caller wants to read
+ * @param dirty - a boolean that tells the method to set the dirty bit in the frame to true or false
+ * @return Status OK if unpinning was successful, PAGENOTPINNED if page was never pinned, or HASHNOTFOUND if page is not in bufferPool
+ */
 const Status BufMgr::unPinPage(File* file, const int PageNo, 
                    const bool dirty) 
 {
@@ -167,6 +195,12 @@ const Status BufMgr::unPinPage(File* file, const int PageNo,
     return OK; // Success
 }
 
+/**
+ * method used to allocate a page by using allocatePage(), allocBuf(), insert(), and Set()
+ * @param file - a file pointer in which the page exists
+ * @param PageNo - referance to an integer pageNo that is used to return the page number of the page that is allocated
+ *  * @param page - reference to a Page pointer that is used to return the pointer to the page that is allocated
+ */
 const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page) 
 {
     if(file->allocatePage(pageNo) != OK) return UNIXERR; // error occurred in allocatePage
